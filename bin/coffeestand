@@ -1,0 +1,41 @@
+#!/usr/bin/env coffee
+
+program = require('commander')
+
+CoffeeStand = require('../lib/coffeestand')
+
+program
+  .option('-i, --ignore <path>', 'a path to ignore pattern (glob) setting file', '.csignore')
+  .option('-p, --ipatterns <patterns>', 'comma separated ignore patterns (glob)')
+  .option('--nolog', 'no stdout log messages')
+  .option('--nolint', 'no CoffeeLinting')
+  .option('--nojs', 'no writing to JS output file')
+  .option('-l, --lintconfig <path>', 'a path to coffeelint config file (JSON)', '.coffeelint')
+  .option('-m, --mapper <path>', 'a path to CS to JS file mapping rule file (JSON)', '.csmapper')
+
+program
+  .parse(process.argv)
+
+dir = program.args[0] ? './'
+ignoreFile = program.ignore
+ignorePatterns = program.ipatterns?.split?(',') ? []
+mapperFile = program.mapper
+nolint = program.nolint ? false
+nolog = program.nolog ? false
+nojs = program.nojs ? false
+lintConfigPath = program.lintconfig
+
+coffeestand = new CoffeeStand(
+  dir,
+  {
+    ignoreFile: ignoreFile,
+    ignorePatterns: ignorePatterns,
+    mapperFile: mapperFile,
+    nolog: nolog,
+    nolint: nolint,
+    nojs: nojs,
+    lintConfigPath: lintConfigPath
+  }
+)
+
+coffeestand.run()
