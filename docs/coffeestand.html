@@ -1,0 +1,327 @@
+<!DOCTYPE html>  <html> <head>   <title>coffeestand.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="coffeestand.html">                 coffeestand.coffee               </a>                                           <a class="source" href="compiler.html">                 compiler.coffee               </a>                                           <a class="source" href="walker.html">                 walker.coffee               </a>                                           <a class="source" href="watcher.html">                 watcher.coffee               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               coffeestand.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <ul>
+<li>Recursively watch directories and recompile when coffee files are changed</li>
+<li>Write compiled code to a destination js file, of course  </li>
+<li>Aware of newly created files and directories too!
+So you don't have to rewatch every time you add a file</li>
+<li><a href="http://www.coffeelint.org/">Coffeelint</a> the source code after every compilation</li>
+<li>Ignore Files through glob matching option and .csingore files</li>
+</ul>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h3>Require Dependencies</h3>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <h4>Standard Node Modules</h4>
+
+<p><code>fs</code> : <a href="http://nodejs.org/api/fs.html">File System</a> <br />
+<code>path</code> : <a href="http://nodejs.org/api/path.html">Path</a> <br />
+<code>child_process</code> : <a href="http://nodejs.org/api/child_process.html">Child Processes</a> <br />
+<code>events</code> : <a href="http://nodejs.org/api/events.html">Events</a>  </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">fs = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;fs&#39;</span><span class="p">)</span>
+<span class="nv">path = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;path&#39;</span><span class="p">)</span>
+<span class="nv">cp = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;child_process&#39;</span><span class="p">)</span>
+<span class="nv">EventEmitter = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;events&#39;</span><span class="p">).</span><span class="nx">EventEmitter</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h4>Third Party Modules</h4>
+
+<p><code>underscore</code> by <a href="https://github.com/documentcloud/underscore">DocumentCloud@documentcloud</a> <br />
+<code>minimatch</code> by <a href="https://github.com/issacs/minimatch">Isaac Z. Schlueter@issacs</a> <br />
+<code>colors</code> by <a href="https://github.com/marak/colors">Marak@marak</a>  </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">_ = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;underscore&#39;</span><span class="p">)</span>
+<span class="nv">minimatch = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;minimatch&#39;</span><span class="p">)</span>
+<span class="nv">colors = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;colors&#39;</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h4>Local Modules</h4>
+
+<p><code>walker</code> - <a href="walker.html">read annotated source code</a> <br />
+<code>watcher</code> - <a href="watcher.html">read annotated source code</a> <br />
+<code>compiler</code> - <a href="compiler.html">read annotated source code</a>  </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">Walker = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./walker&#39;</span><span class="p">)</span>
+<span class="nv">Watcher = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./watcher&#39;</span><span class="p">)</span>
+<span class="nv">Compiler = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./compiler&#39;</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <hr />             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <h2>CoffeeStand Class</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">module.exports = </span><span class="k">class</span> <span class="nx">CoffeeStand</span> <span class="k">extends</span> <span class="nx">EventEmitter</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h3>Class Properties</h3>
+
+<p><code>@root (String)</code> : the path to the root directory to watch <br />
+<code>@opts (Objects)</code> : some options <br />
+<code>@nolint (Bool)</code> : <code>true</code> to avoid linting <br />
+<code>@nojs (Bool)</code> : <code>true</code> to write to a JS file after compilation <br />
+<code>@nolog (Bool)</code> : <code>true</code> to suppress stdout messages <br />
+<code>@lintConfigPath (String)</code> : a path to a coffeelint configuration file, default to <code>./coffeelint.json</code> <br />
+<code>@dirs (Array)</code> : path <code>string</code>s to currently watching directories <br />
+<code>@files (Array)</code> : path <code>string</code>s to currently watching coffee files
+<code>@errorFiles (Array)</code> : path <code>string</code>s to compilation error coffee files <br />
+<code>@watchers (Object)</code> : a map object of <code>Watcher</code> instances for each directory <br />
+<code>@cmpilers (Object)</code> : a map object of <code>Compiler</code> instances for each file <br />
+<code>@lintConfig (Object)</code> : coffeelint configrations <br />
+<code>@ignoreFiles (Array)</code> : glob <code>String</code> patterns to ignore files and directories
+<code>@ignoreFile (String)</code> : a path to the ignore file pattern file
+<code>@mapperFile (String)</code> : a path to the CS to JS mapping rule  file <br />
+<code>@mapper (Object)</code> : rules to map <code>csfile</code> path to output <code>jsfile</code> path</p>             </td>             <td class="code">               <div class="highlight"><pre> </pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <h3>Events</h3>
+
+<p><code>compiled</code> : compiled a coffee file <br />
+<code>nofile</code> : the coffee file to compile not found <br />
+<code>write error</code> : failed to write to a JS file <br />
+<code>compile error</code> : failed to compile a coffee file <br />
+<code>dir removed</code> : a directory removed <br />
+<code>dir created</code> : a directory created <br />
+<code>coffee created</code> : a coffee file created <br />
+<code>coffee changed</code> : a coffee file changed <br />
+<code>coffee removed</code> : a coffee file removed <br />
+<code>walkend</code> : the initial directory reading operation finished <br />
+<code>watchstart</code> : <code>fs.watch</code> started</p>             </td>             <td class="code">               <div class="highlight"><pre> </pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h4>constructor</h4>
+
+<p><code>@root</code> : see <em>Class Properties</em> section <br />
+<code>@opts</code> : see <em>Class Properties</em> section</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">constructor: </span><span class="p">(</span><span class="vi">@root = </span><span class="nx">process</span><span class="p">.</span><span class="nx">cwd</span><span class="p">(),</span> <span class="vi">@opts = </span><span class="p">{})</span> <span class="o">-&gt;</span>
+    <span class="vi">@root = </span><span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">@root</span><span class="p">)</span>
+    <span class="vi">@nolint = </span><span class="nx">@opts</span><span class="p">.</span><span class="nx">nolint</span> <span class="o">?</span> <span class="kc">false</span>
+    <span class="vi">@nojs = </span><span class="nx">@opts</span><span class="p">.</span><span class="nx">nojs</span> <span class="o">?</span> <span class="kc">false</span>
+    <span class="vi">@nolog = </span><span class="nx">@opts</span><span class="p">.</span><span class="nx">nolog</span> <span class="o">?</span> <span class="kc">true</span>
+    <span class="vi">@lintConfigPath = </span><span class="nx">@opts</span><span class="p">.</span><span class="nx">lintConfigPath</span> <span class="o">?</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">@root</span><span class="p">,</span> <span class="s">&#39;.coffeelint&#39;</span><span class="p">)</span>
+    <span class="vi">@dirs = </span><span class="p">[]</span>
+    <span class="vi">@files = </span><span class="p">[]</span>
+    <span class="vi">@errorFiles = </span><span class="p">[]</span>
+    <span class="vi">@watchers = </span><span class="p">{}</span>
+    <span class="vi">@compilers = </span><span class="p">{}</span>
+    <span class="vi">@lintConfig = </span><span class="p">{</span><span class="nv">nolint: </span><span class="nx">@nolint</span><span class="p">}</span>
+    <span class="vi">@ignoreFile = </span><span class="nx">@opts</span><span class="o">?</span><span class="p">.</span><span class="nx">ignoreFile</span> <span class="o">?</span> <span class="s">&#39;.csignore&#39;</span>
+    <span class="vi">@mapperFile = </span><span class="nx">@opts</span><span class="o">?</span><span class="p">.</span><span class="nx">mapperFile</span> <span class="o">?</span> <span class="s">&#39;.csmapper&#39;</span>
+    <span class="vi">@ignoreFiles = </span><span class="p">[</span><span class="s">&#39;**/.*&#39;</span><span class="p">,</span><span class="s">&#39;**/node_modules&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nx">@opts</span><span class="o">?</span><span class="p">.</span><span class="nx">ignorePatterns</span><span class="o">?</span>
+      <span class="nx">@setIgnoreFiles</span><span class="p">(</span><span class="nx">@opts</span><span class="p">.</span><span class="nx">ignorePatterns</span><span class="p">)</span>
+    <span class="vi">@mapper = </span><span class="nx">@opts</span><span class="o">?</span><span class="p">.</span><span class="nx">mapper</span> <span class="o">?</span> <span class="p">{}</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <hr />             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <h3>Private Methods</h3>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <h4>check if the given file should be ignored</h4>
+
+<p><code>dir (String)</code> : a path to a file</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_isIgnore: </span><span class="nf">(file) -&gt;</span>
+    <span class="k">for</span> <span class="nx">v</span> <span class="k">in</span> <span class="nx">@ignoreFiles</span>
+      <span class="k">if</span> <span class="nx">minimatch</span><span class="p">(</span><span class="nx">file</span><span class="p">,</span> <span class="nx">v</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">true</span>
+    <span class="k">return</span> <span class="kc">false</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <h4>Read a .csmapper file and add patterns</h4>
+
+<p><code>p (String)</code> : a path to a mapper JSON file, default to <code>.csmapper</code> <br />
+<code>cb (Function)</code> : a callback function  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_readCSMapper: </span><span class="nf">(p = &quot;.csmapper&quot;,cb) -&gt;</span>
+    <span class="k">if</span> <span class="o">not</span> <span class="nx">p</span><span class="o">?</span> <span class="o">or</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;function&#39;</span>
+      <span class="nv">cb = </span><span class="nx">p</span>
+      <span class="nv">p = </span><span class="s">&quot;.csignore&quot;</span>
+    <span class="nv">p = </span><span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+    <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="s">&#39;utf8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="o">not</span> <span class="nx">err</span>
+        <span class="k">try</span>
+          <span class="nv">newmapper = </span><span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">body</span><span class="p">)</span>
+          <span class="vi">@mapper = </span><span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">@mapper</span><span class="p">,</span><span class="nx">newmapper</span><span class="p">)</span>
+        <span class="k">catch</span> <span class="nx">e</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span>
+      <span class="nx">cb</span><span class="p">(</span><span class="nx">@mapper</span><span class="p">)</span>
+    <span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <h4>Read a .csignore file and add patterns</h4>
+
+<p><code>dir (String)</code> : a path to a directory <br />
+<code>cb (Function)</code> : a callback function  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_readCSIgnore: </span><span class="nf">(p = &quot;.csignore&quot;, cb) -&gt;</span>
+    <span class="k">if</span> <span class="o">not</span> <span class="nx">p</span><span class="o">?</span> <span class="o">or</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;function&#39;</span>
+      <span class="nv">cb = </span><span class="nx">p</span>
+      <span class="nv">p = </span><span class="s">&quot;.csignore&quot;</span>
+    <span class="nv">p = </span><span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+    <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="s">&#39;utf8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="o">not</span> <span class="nx">err</span>
+        <span class="nv">patterns = </span><span class="nx">_</span><span class="p">(</span><span class="nx">body</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s">&#39;\n&#39;</span><span class="p">)).</span><span class="nx">chain</span><span class="p">().</span><span class="nx">compact</span><span class="p">().</span><span class="nx">value</span><span class="p">()</span>
+        <span class="nx">@setIgnoreFiles</span><span class="p">(</span><span class="nx">patterns</span><span class="p">)</span>
+      <span class="nx">cb</span><span class="p">(</span><span class="nx">@ignoreFiles</span><span class="p">)</span>
+    <span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <h4>Add a directory to @dirs</h4>
+
+<p><code>dir (String)</code> : a path to a directory  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_addDir: </span><span class="nf">(dir) -&gt;</span>
+    <span class="nx">@dirs</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <h4>Add a file to @files</h4>
+
+<p><code>file (String)</code> : a path to a file  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_addFile: </span><span class="nf">(file) -&gt;</span>
+    <span class="nx">@files</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <h4>Remove a directory from @dirs</h4>
+
+<p><code>dir (String)</code> : a path to a directory  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_rmDir: </span><span class="nf">(dir) -&gt;</span>
+    <span class="vi">@dirs = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@dirs</span><span class="p">).</span><span class="nx">without</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <h4>Remove a file from @files</h4>
+
+<p><code>file (String)</code> : a path to a file  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_rmFile: </span><span class="nf">(file) -&gt;</span>
+    <span class="vi">@files = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@files</span><span class="p">).</span><span class="nx">without</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <h4>remove a Compiler</h4>
+
+<p><code>file (String)</code> : a path to the file which the Compiler to remove is on  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_removeCompiler: </span><span class="nf">(file) -&gt;</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">file</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">removeAllListeners</span><span class="p">()</span>
+    <span class="k">delete</span> <span class="nx">@compilers</span><span class="p">[</span><span class="nx">file</span><span class="p">]</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <h4>Parse a lint result</h4>
+
+<p><code>lint (Object)</code> : a result form linting </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_parseLint: </span><span class="nf">(lint) -&gt;</span>
+    <span class="nv">errorCount = </span><span class="mi">0</span>
+    <span class="nv">warnCount = </span><span class="mi">0</span>
+    <span class="k">if</span> <span class="nx">lint</span><span class="p">.</span><span class="nx">err</span>
+      <span class="k">return</span> <span class="p">{</span><span class="nv">message : </span><span class="s">&quot;\n  lint compile error: </span><span class="si">#{</span><span class="nx">lint</span><span class="p">.</span><span class="nx">err</span><span class="si">}</span><span class="s">&quot;</span><span class="p">.</span><span class="nx">red</span><span class="p">,</span> <span class="nv">errorCount : </span><span class="nx">errorCount</span><span class="p">}</span>
+    <span class="k">else</span> <span class="k">if</span> <span class="nx">lint</span><span class="p">.</span><span class="nx">length</span> <span class="o">is</span> <span class="mi">0</span>
+      <span class="k">return</span> <span class="p">{</span><span class="nv">message : </span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="nv">errorCount : </span><span class="nx">errorCount</span><span class="p">}</span>
+    <span class="k">else</span>
+      <span class="nv">errors = </span><span class="p">[]</span>
+      <span class="k">for</span> <span class="nx">v</span> <span class="k">in</span> <span class="nx">lint</span>
+        <span class="k">if</span> <span class="nx">v</span><span class="p">.</span><span class="nx">level</span> <span class="o">is</span> <span class="s">&#39;error&#39;</span>
+          <span class="nx">errorCount</span> <span class="o">+=</span> <span class="mi">1</span>
+          <span class="nv">lcolor = </span><span class="s">&#39;red&#39;</span>
+        <span class="k">else</span> <span class="k">if</span> <span class="nx">v</span><span class="p">.</span><span class="nx">level</span> <span class="o">is</span> <span class="s">&#39;warn&#39;</span>
+          <span class="nv">lcolor = </span><span class="s">&#39;yellow&#39;</span>
+          <span class="nx">warnCount</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="nv">error = </span><span class="p">[(</span><span class="s">&quot;  </span><span class="err">#</span><span class="si">#{</span><span class="nx">v</span><span class="p">.</span><span class="nx">lineNumber</span><span class="si">}</span><span class="s"> </span><span class="si">#{</span><span class="nx">v</span><span class="p">.</span><span class="nx">message</span><span class="si">}</span><span class="s">.&quot;</span><span class="p">)[</span><span class="nx">lcolor</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="nx">v</span><span class="p">.</span><span class="nx">context</span><span class="o">?</span>
+          <span class="nx">error</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot; </span><span class="si">#{</span><span class="nx">v</span><span class="p">.</span><span class="nx">context</span><span class="si">}</span><span class="s">.&quot;</span><span class="p">[</span><span class="nx">lcolor</span><span class="p">])</span>
+        <span class="nx">error</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot; (</span><span class="si">#{</span><span class="nx">v</span><span class="p">.</span><span class="nx">rule</span><span class="si">}</span><span class="s">)&quot;</span><span class="p">.</span><span class="nx">grey</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nx">v</span><span class="p">.</span><span class="nx">line</span>
+          <span class="nx">error</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot;\n    =&gt; </span><span class="si">#{</span><span class="nx">v</span><span class="p">.</span><span class="nx">line</span><span class="si">}</span><span class="s">&quot;</span><span class="p">.</span><span class="nx">grey</span><span class="p">)</span>
+        <span class="nx">errors</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">error</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">))</span>
+      <span class="nx">errors</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span>
+        <span class="s">&quot;  CoffeeLint: &quot;</span><span class="p">.</span><span class="nx">grey</span> <span class="o">+</span>
+        <span class="s">&quot;</span><span class="si">#{</span><span class="nx">errorCount</span><span class="si">}</span><span class="s"> errors&quot;</span><span class="p">.</span><span class="nx">red</span> <span class="o">+</span>
+        <span class="s">&quot; </span><span class="si">#{</span><span class="nx">warnCount</span><span class="si">}</span><span class="s"> warnings&quot;</span><span class="p">.</span><span class="nx">yellow</span>
+      <span class="p">)</span>
+      <span class="k">return</span> <span class="p">{</span><span class="nv">message : </span><span class="s">&#39;\n&#39;</span> <span class="o">+</span> <span class="nx">errors</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s">&#39;\n&#39;</span><span class="p">),</span> <span class="nv">errorCount : </span><span class="nx">errorCount</span><span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <h4>Set up a Compiler on a file</h4>
+
+<p><code>filename (String)</code> : a path to a file to set a Compiler on</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_setCompiler: </span><span class="nf">(filename) -&gt;</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Compiler</span><span class="p">(</span><span class="nx">filename</span><span class="p">,</span> <span class="nx">@lintConfig</span><span class="p">,</span> <span class="nx">@mapper</span><span class="p">)</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;compiled&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">unless</span> <span class="nx">@nolog</span>
+        <span class="nv">message = </span><span class="p">[</span>
+          <span class="s">&#39;compiled&#39;</span><span class="p">.</span><span class="nx">green</span><span class="p">,</span>
+          <span class="s">&quot; - </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="si">}</span><span class="s">&quot;</span>
+        <span class="p">]</span>
+        <span class="nx">unless</span> <span class="nx">@nojs</span> <span class="k">then</span> <span class="nx">message</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="s">&quot; =&gt; </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">jsfile</span><span class="si">}</span><span class="s">&quot;</span><span class="p">.</span><span class="nx">grey</span><span class="p">)</span>
+        <span class="nx">unless</span> <span class="nx">@nolint</span> <span class="k">then</span> <span class="nx">message</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">@_parseLint</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">lint</span><span class="p">).</span><span class="nx">message</span><span class="p">)</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">message</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&#39;\n&#39;</span><span class="p">)</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;compiled&#39;</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;nofile&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">unless</span> <span class="nx">@nolog</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;coffee file not found&#39;</span><span class="p">.</span><span class="nx">yellow</span> <span class="o">+</span> <span class="s">&quot; - </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="si">}</span><span class="s">\n&quot;</span><span class="p">)</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;nofile&#39;</span><span class="p">,</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;write error&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">unless</span> <span class="nx">@nolog</span>
+        <span class="nv">message = </span><span class="p">[</span>
+          <span class="s">&#39;fail to write js file&#39;</span><span class="p">.</span><span class="nx">yellow</span><span class="p">,</span>
+          <span class="s">&quot; - </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="si">}</span><span class="s">&quot;</span><span class="p">,</span>
+          <span class="s">&quot; -&gt; </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">jsfile</span><span class="si">}</span><span class="s">&quot;</span>
+        <span class="p">]</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">message</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">),</span> <span class="s">&#39;\n&#39;</span><span class="p">)</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;write error&#39;</span><span class="p">,</span><span class="nx">data</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;compile error&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="nx">unless</span> <span class="nx">@nolog</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span>
+          <span class="s">&#39;compile error&#39;</span><span class="p">.</span><span class="nx">red</span> <span class="o">+</span>
+          <span class="s">&quot; in </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="si">}</span><span class="s">&quot;</span> <span class="o">+</span>
+          <span class="p">(</span><span class="s">&quot; =&gt; </span><span class="si">#{</span><span class="nx">data</span><span class="p">.</span><span class="nx">err</span><span class="si">}</span><span class="s">&quot;</span><span class="p">).</span><span class="nx">red</span><span class="o">+</span><span class="s">&#39;\n&#39;</span>
+        <span class="p">)</span>
+      <span class="nx">@errorFiles</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">file</span><span class="p">)</span>
+      <span class="vi">@errorFiles = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@errorFiles</span><span class="p">).</span><span class="nx">uniq</span><span class="p">()</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;compile error&#39;</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">].</span><span class="nx">compile</span><span class="p">(</span><span class="nx">@nojs</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <h4>Close a directoy Watcher</h4>
+
+<p><code>dir (String)</code> : a path to a directory  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_closeWatcher: </span><span class="nf">(dir) -&gt;</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dir</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">removeAllListeners</span><span class="p">()</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dir</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">close</span><span class="p">()</span>
+    <span class="k">delete</span> <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dir</span><span class="p">]</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <h4>Watch directory for changes and emit events</h4>
+
+<p><code>dirname (String)</code> : a path to a directory to watch
+<code>cb (Function)</code> : a callback function</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">_watch: </span><span class="nf">(dirname, cb) -&gt;</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Watcher</span><span class="p">(</span><span class="nx">dirname</span><span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;dir removed&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="o">not</span> <span class="nx">@_isIgnore</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;dir removed&#39;</span><span class="p">,</span> <span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@stopWatch</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;dir created&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="o">not</span> <span class="nx">@_isIgnore</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@startWatch</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;dir created&#39;</span><span class="p">,</span> <span class="nx">filename</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;file created&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;.coffee&#39;</span> <span class="o">and</span> <span class="o">not</span> <span class="nx">@_isIgnore</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@startCompiler</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;coffee created&#39;</span><span class="p">,</span> <span class="nx">filename</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;file changed&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">filename</span><span class="p">,</span><span class="nx">stats</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;.coffee&#39;</span> <span class="o">and</span> <span class="o">not</span> <span class="nx">@_isIgnore</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;coffee changed&#39;</span><span class="p">,</span> <span class="nx">filename</span><span class="p">)</span>
+        <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">compile</span><span class="o">?</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;file removed&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;.coffee&#39;</span> <span class="o">and</span> <span class="o">not</span> <span class="nx">@_isIgnore</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">jsname</span><span class="o">?</span> <span class="o">and</span> <span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">rmJS</span>
+          <span class="nv">rmfn = </span><span class="nx">@compilers</span><span class="p">[</span><span class="nx">filename</span><span class="p">]</span><span class="o">?</span><span class="p">.</span><span class="nx">rmJS</span>
+        <span class="k">else</span>
+          <span class="nv">rmfn = </span><span class="p">(</span><span class="nx">cb</span><span class="p">)</span> <span class="o">=&gt;</span>
+            <span class="nx">cb</span><span class="p">()</span>
+        <span class="nx">rmfn</span><span class="p">(</span> <span class="o">=&gt;</span>
+          <span class="vi">@errorFiles = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@errorFiles</span><span class="p">).</span><span class="nx">without</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+          <span class="nx">@stopCompiler</span><span class="p">(</span><span class="nx">filename</span><span class="p">)</span>
+          <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;coffee removed&#39;</span><span class="p">,</span> <span class="nx">filename</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="kc">on</span><span class="p">(</span><span class="s">&#39;watchstart&#39;</span><span class="p">,</span> <span class="o">=&gt;</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;watchstart&#39;</span><span class="p">,</span> <span class="nx">dirname</span><span class="p">)</span>      
+    <span class="p">)</span>
+    <span class="nx">@watchers</span><span class="p">[</span><span class="nx">dirname</span><span class="p">].</span><span class="nx">watch</span><span class="p">(</span><span class="nx">cb</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <hr />             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <h3>Public API</h3>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-27">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-27">&#182;</a>               </div>               <h4>Read a configration file for coffeelint</h4>
+
+<p><code>p (String)</code> : a path to a config file <br />
+<code>cb (Function)</code> : a callback function  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">getLintConfig: </span><span class="nf">(p = @lintConfigPath, cb) -&gt;</span>
+    <span class="k">if</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;function&#39;</span>
+      <span class="nv">cb = </span><span class="nx">p</span>
+      <span class="nv">p = </span><span class="nx">@lintConfigPath</span>
+    <span class="k">if</span> <span class="nx">@nolint</span> <span class="o">is</span> <span class="kc">true</span>
+      <span class="vi">@lintConfig = </span><span class="p">{</span><span class="nv">nolint: </span><span class="kc">false</span><span class="p">}</span>
+      <span class="nx">cb</span><span class="o">?</span><span class="p">()</span>
+    <span class="k">else</span>
+      <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="s">&#39;utf8&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="nx">body</span><span class="p">)</span> <span class="o">=&gt;</span>
+        <span class="nx">unless</span> <span class="nx">err</span>
+          <span class="k">try</span>
+            <span class="vi">@lintConfig = </span><span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">body</span><span class="p">)</span>
+            <span class="vi">@lintConfig.nolint = </span><span class="kc">false</span>
+          <span class="k">catch</span> <span class="nx">e</span>
+        <span class="nx">cb</span><span class="o">?</span><span class="p">(</span><span class="nx">@lintConfig</span><span class="p">)</span>
+      <span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-28">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-28">&#182;</a>               </div>               <h4>Get a list of compilation error coffee files</h4>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">getErrorFiles: </span><span class="o">-&gt;</span>
+    <span class="k">return</span> <span class="nx">@errorFiles</span></pre></div>             </td>           </tr>                               <tr id="section-29">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-29">&#182;</a>               </div>               <h4>Add patterns to @ignoreFile</h4>
+
+<p><code>newFiles (Array)</code> : glob <code>String</code>s to add to <code>@ignoreFile</code>  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">setIgnoreFiles: </span><span class="nf">(newFiles) -&gt;</span>
+    <span class="vi">@ignoreFiles = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@ignoreFiles</span><span class="p">).</span><span class="nx">union</span><span class="p">(</span><span class="nx">newFiles</span><span class="p">)</span>    </pre></div>             </td>           </tr>                               <tr id="section-30">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-30">&#182;</a>               </div>               <h4>Unset ignore patterns for the given directory</h4>
+
+<p><code>dir (String)</code> : a directory path  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">unsetIgnoreFiles: </span><span class="nf">(patterns) -&gt;</span>
+    <span class="k">if</span> <span class="nx">patterns</span><span class="o">?</span>
+      <span class="vi">@ignoreFiles = </span><span class="nx">_</span><span class="p">(</span><span class="nx">@ignoreFiles</span><span class="p">).</span><span class="nx">reject</span><span class="p">(</span><span class="nf">(v) -&gt;</span>
+        <span class="k">return</span> <span class="nx">patterns</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span> <span class="o">isnt</span> <span class="o">-</span><span class="mi">1</span>
+      <span class="p">)</span>
+    <span class="k">return</span> <span class="nx">@ignoreFiles</span></pre></div>             </td>           </tr>                               <tr id="section-31">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-31">&#182;</a>               </div>               <h4>Start Compiler on a file</h4>
+
+<p><code>file (String)</code> : a file path   </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">startCompiler: </span><span class="nf">(file) -&gt;</span>
+    <span class="nx">@_addFile</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span>
+    <span class="nx">@_setCompiler</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-32">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-32">&#182;</a>               </div>               <h4>Start watching a directory</h4>
+
+<p><code>dir (String)</code> : a directory path 
+<code>cb (Function)</code> : a callback function </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">startWatch: </span><span class="nf">(dir,cb) -&gt;</span>
+    <span class="nx">@_addDir</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span>
+    <span class="nx">@_watch</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span><span class="nx">cb</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-33">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-33">&#182;</a>               </div>               <h4>Stop Compiler on a file</h4>
+
+<p><code>file (String)</code> : a file path   </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">stopCompiler: </span><span class="nf">(file) -&gt;</span>
+    <span class="nx">@_removeCompiler</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span>
+    <span class="nx">@_rmFile</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-34">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-34">&#182;</a>               </div>               <h4>Stop watching a directory</h4>
+
+<p><code>dir (String)</code> : a directory path  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">stopWatch: </span><span class="nf">(dir) -&gt;</span>
+    <span class="nx">@unsetIgnoreFiles</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span>
+    <span class="nx">@_closeWatcher</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span>
+    <span class="nx">@_rmDir</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-35">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-35">&#182;</a>               </div>               <h4>Kill CoffeeStand by removing all Compilers and Watchers</h4>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">kill: </span><span class="nf">(cb) -&gt;</span>
+    <span class="k">for</span> <span class="nx">v</span> <span class="k">in</span> <span class="nx">@dirs</span>
+      <span class="nx">@stopWatch</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+    <span class="k">for</span> <span class="nx">v</span> <span class="k">in</span> <span class="nx">@files</span>
+      <span class="nx">@stopCompiler</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+    <span class="nx">cb</span><span class="o">?</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-36">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-36">&#182;</a>               </div>               <h4>Recursively Walk through directories and watch them, set up compilers on coffee files</h4>
+
+<p><code>file_cb (Function)</code> : a callback function to execute when a file is found <br />
+<code>dir_cb (Function)</code> : a callback function to execute when a directory is found  </p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">walk: </span><span class="nf">(file_cb, dir_cb) -&gt;</span>
+    <span class="nv">ignore = </span><span class="nx">@ignoreFiles</span>
+    <span class="nv">walker = </span><span class="k">new</span> <span class="nx">Walker</span><span class="p">(</span>
+      <span class="nx">@root</span>
+      <span class="p">{</span>
+        <span class="nv">ignoreFiles: </span><span class="nx">ignore</span><span class="p">,</span>
+        <span class="nv">callbacks: </span><span class="p">{</span>
+          <span class="nv">dir:</span>
+            <span class="p">(</span><span class="nx">dir</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span> <span class="o">=&gt;</span>
+              <span class="nx">file_cb</span><span class="o">?</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span>
+          <span class="nv">file:</span>
+            <span class="p">(</span><span class="nx">file</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span> <span class="o">=&gt;</span>
+              <span class="nx">dir_cb</span><span class="o">?</span><span class="p">(</span><span class="nx">file</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="nx">walker</span><span class="p">.</span><span class="nx">walk</span><span class="p">((</span><span class="nx">ret</span><span class="p">)</span><span class="o">=&gt;</span>
+      <span class="nx">@emit</span><span class="p">(</span><span class="s">&#39;walkend&#39;</span><span class="p">,</span><span class="nx">ret</span><span class="p">)</span>
+    <span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-37">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-37">&#182;</a>               </div>               <h4>Run CoffeeStand</h4>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nv">run: </span><span class="o">-&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-38">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-38">&#182;</a>               </div>               <p>First get CoffeeLint config</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">@getLintConfig</span><span class="p">(</span> <span class="o">=&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-39">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-39">&#182;</a>               </div>               <p>Then get .csignore</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="nx">@_readCSIgnore</span><span class="p">(</span><span class="nx">@ignoreFile</span><span class="p">,</span> <span class="o">=&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-40">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-40">&#182;</a>               </div>               <p>Then get .csmapper</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">@_readCSMapper</span><span class="p">(</span><span class="nx">@mapperFile</span><span class="p">,</span> <span class="o">=&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-41">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-41">&#182;</a>               </div>               <p>Finally recursively walk through directories</p>             </td>             <td class="code">               <div class="highlight"><pre>          <span class="nx">@walk</span><span class="p">(</span>
+            <span class="p">(</span><span class="nx">dir</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span> <span class="o">=&gt;</span></pre></div>             </td>           </tr>                               <tr id="section-42">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-42">&#182;</a>               </div>               <p>If a directory is found, watch it for changes</p>             </td>             <td class="code">               <div class="highlight"><pre>              <span class="nx">@startWatch</span><span class="p">(</span><span class="nx">dir</span><span class="p">)</span>
+            <span class="p">(</span><span class="nx">file</span><span class="p">,</span><span class="nx">stat</span><span class="p">)</span> <span class="o">=&gt;</span>
+              <span class="k">if</span> <span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span> <span class="o">is</span> <span class="s">&#39;.coffee&#39;</span></pre></div>             </td>           </tr>                               <tr id="section-43">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-43">&#182;</a>               </div>               <p>If a coffee file is found, set a <code>Compiler</code> on it</p>             </td>             <td class="code">               <div class="highlight"><pre>                <span class="nx">@startCompiler</span><span class="p">(</span><span class="nx">file</span><span class="p">)</span>
+          <span class="p">)</span>
+        <span class="p">)</span>
+      <span class="p">)</span>
+    <span class="p">)</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
