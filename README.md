@@ -1,7 +1,7 @@
 CoffeeStand
 ===========
 
-A recursive CoffeeScript watcher also aware of newly added files. [The build-in CoffeeScript watcher](http://coffeescript.org/#usage) doesn't work this way. Now you can start **CoffeeStand** at your root directory once and for all and forget about restarting the watch process every time you add a new file.
+A recursive CoffeeScript watcher also aware of newly added files. [The built-in CoffeeScript watcher](http://coffeescript.org/#usage) doesn't work this way. Now you can start **CoffeeStand** at your root directory once and for all and forget about restarting the watch process every time you add a new file.
 
 The simplest way to recursively watch your entire project from the command-line is run `coffeestand` in the project root directory.
 
