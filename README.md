@@ -44,7 +44,7 @@ Command Line Usage
 CoffeeLint
 ----------
 
-CoffeeStand does auto-[CooffeeLint](http://www.coffeelint.org/) your coffeescript files after every compilation to keep you code beautiful. You can suppess this feature by passing `--nolint` option.
+CoffeeStand does auto-[CooffeeLint](http://www.coffeelint.org/) your coffeescript files after every compilation to keep your code beautiful. You can suppess this feature by passing `--nolint` option.
 
 To change the default configurations, put `.coffeelint` file in your project root directory. You can also put config file at a defferent location, just pass `-l` or `--lintconfig` option followed by your arbitrary location to the config file.
 
