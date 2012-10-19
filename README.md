@@ -115,6 +115,16 @@ Putting multiple patterns in `.csmapper`
 
     coffeestand -m /path/to/your/mapping/file.json
 
+In Your Node Scripts
+--------------------
+
+CoffeeStand can be also used in your node scripts as a module.  
+
+    CoffeeStand = require('coffeestand')
+
+
+see [annotated sorce code](http://tomoio.github.com/coffeestand/docs/coffeestand.html) for more details  
+
 Running Tests
 -------------
 
