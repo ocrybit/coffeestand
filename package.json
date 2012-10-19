@@ -11,7 +11,7 @@
   },
   "main" : "./lib/coffeestand",
   "bin" : {
-    "coffee-stand" : "./bin/coffeestand"
+    "coffeestand" : "./bin/coffeestand"
   },
   "directories" : {
     "bin" : "./bin",
