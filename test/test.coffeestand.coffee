@@ -178,8 +178,8 @@ describe('CoffeeStand', ->
     it('emit "walkend" with @files & @dirs when finish', (done) ->
       coffeestand.walk()
       coffeestand.once('walkend',(data)->
-        data.dirs.should.eql([TMP,FOO])
-        data.files.should.eql([HOTCOFFEE,ICEDCOFFEE])
+        data.Directory.should.eql([TMP,FOO])
+        data.File.should.eql([HOTCOFFEE,ICEDCOFFEE])
         done()
       )
     )

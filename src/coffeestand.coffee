@@ -20,16 +20,16 @@ EventEmitter = require('events').EventEmitter
 # #### Third Party Modules
 # `underscore` by [DocumentCloud@documentcloud](https://github.com/documentcloud/underscore)  
 # `minimatch` by [Isaac Z. Schlueter@issacs](https://github.com/issacs/minimatch)  
-# `colors` by [Marak@marak](https://github.com/marak/colors)  
+# `colors` by [Marak@marak](https://github.com/marak/colors)
+# `dirwalker` by [Tomo I/O@tomoio](https://github.com/tomoio/dirwalker)  
 _ = require('underscore')
 minimatch = require('minimatch')
 colors = require('colors')
+DirWalker = require('dirwalker')
 
 # #### Local Modules
-# `walker` - [read annotated source code](walker.html)  
 # `watcher` - [read annotated source code](watcher.html)  
 # `compiler` - [read annotated source code](compiler.html)  
-Walker = require('./walker')
 Watcher = require('./watcher')
 Compiler = require('./compiler')
 
@@ -368,24 +368,23 @@ module.exports = class CoffeeStand extends EventEmitter
   # `dir_cb (Function)` : a callback function to execute when a directory is found  
   walk: (file_cb, dir_cb) ->
     ignore = @ignoreFiles
-    walker = new Walker(
-      @root
-      {
-        ignoreFiles: ignore,
-        callbacks: {
-          dir:
-            (dir,stat) =>
-              file_cb?(dir,stat)
-          file:
-            (file,stat) =>
-              dir_cb?(file,stat)
-        }
-      }
+    walker = new DirWalker(@root)
+    walker.setFilter((dir, path) =>
+      for v in @ignoreFiles
+        if minimatch(dir, v)
+          return true
+      return false
     )
-    walker.walk((ret)=>
-      @emit('walkend',ret)
+    walker.on('File', (file, stat) =>
+      file_cb?(file, stat)
     )
-
+    walker.on('Directory', (dir, stat) =>
+      dir_cb?(dir, stat)
+    )
+    walker.on('end', (ret) =>
+       @emit('walkend', ret)
+    )
+    walker.walk()
   # #### Run CoffeeStand
   run: ->
     # First get CoffeeLint config
@@ -396,13 +395,13 @@ module.exports = class CoffeeStand extends EventEmitter
         @_readCSMapper(@mapperFile, =>
           # Finally recursively walk through directories
           @walk(
-            (dir,stat) =>
-              # If a directory is found, watch it for changes
-              @startWatch(dir)
             (file,stat) =>
               if path.extname(file) is '.coffee'
                 # If a coffee file is found, set a `Compiler` on it
                 @startCompiler(file)
+            (dir,stat) =>
+              # If a directory is found, watch it for changes
+              @startWatch(dir)
           )
         )
       )

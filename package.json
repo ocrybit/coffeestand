@@ -1,6 +1,6 @@
 {
   "name" : "coffeestand",
-  "version" : "0.0.1",
+  "version" : "0.0.2",
   "description" : "A recursive CoffeeScript watcher also aware of newly added files.",
   "keywords" : ["coffeescript", "watcher", "coffeelint", "compiler", "recursive"],
   "bugs" : {"url" : "https://github.com/tomoio/coffeestand/issues"},
@@ -29,7 +29,8 @@
     "colors" : "~0.6.0",
     "coffeelint" : "~0.5.2",
     "commander" : "~1.0.5",
-    "underscore" : "~1.4.2"
+    "underscore" : "~1.4.2",
+    "dirwalker" : "~0.0.1"
   },
   "devDependencies" : {
     "mocha" : "~1.6.0",
