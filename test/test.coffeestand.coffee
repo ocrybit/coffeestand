@@ -260,7 +260,7 @@ describe('CoffeeStand', ->
       coffeestand.once('watchset', (data)->
         coffeestand.on('watchset', (file) ->
           if file is FOO2
-            coffeestand.once('coffee created', (file) ->
+            coffeestand.once('compiled', (file) ->
               done()
             )
             fs.writeFile(AMERICANCOFFEE, GOOD_CODE)
@@ -310,6 +310,71 @@ describe('CoffeeStand', ->
     it('parse CoffeeLint result object', () ->
       parsed = coffeestand._parseLint([{level : "error", message: "error!"}])
       parsed.errorCount.should.equal(1)
+    )
+  )
+
+  describe('_isDocco', ->
+    it('return @doccoSources if filepath matches', () ->
+      coffeestand.doccoSources = [TMP+'/*']
+      should.exist(coffeestand._isDocco(HOTCOFFEE))
+      coffeestand._isDocco(HOTCOFFEE).should.eql([TMP+'/*'])
+      
+    )
+  )
+  describe('_withoutFile', ->
+    it('take off a file from @doccoFiles', () ->
+      coffeestand.doccoFiles = [HOTCOFFEE, ICEDCOFFEE]
+      coffeestand._withoutFile(HOTCOFFEE)
+      coffeestand.doccoFiles.should.not.include(HOTCOFFEE)
+    )
+  )
+
+  describe('_setDocco', ->
+    it('set a child process for docco operations', () ->
+      delete coffeestand.cp_docco
+      should.not.exist(coffeestand.cp_docco)
+      coffeestand._setDocco()
+      should.exist(coffeestand.cp_docco)
+      coffeestand.cp_docco.should.be.a('object')
+    )
+  )
+  
+  describe('_setDoccoSources', ->
+    it('resolve and set sources for docco', () ->
+      coffeestand._setDoccoSources(["#{FOO}/*"])
+      console.log(coffeestand.doccoSources)
+      coffeestand.doccoSources.should.include("#{FOO}/*")
+    )
+  )
+  describe('document', ->
+    it('generate docco documents', (done) ->
+      coffeestand._setDoccoSources(["#{FOO}/*"])
+      coffeestand.doccoOptions = {output:"#{TMP}/docs"}
+      coffeestand.once('docco', ()->
+        fs.exists("#{TMP}/docs/iced.html", (exist) ->
+          exist.should.be.ok
+          done()
+        )
+      )
+      coffeestand.document()
+    )
+  )
+
+  describe('docco', ->
+    it("shouldn't proceed when @doccoFiles.length isn't 0", (done) ->
+      @timeout(5000)
+      coffeestand._setDoccoSources(["#{FOO}/*"])
+      coffeestand.doccoFiles.push(ICEDCOFFEE)
+      coffeestand.doccoOptions = {output:"#{TMP}/docs"}
+      coffeestand.once('docco', (ICEDCOFFEE)->
+          false.should.be.ok
+      )
+      coffeestand.docco(ICEDCOFFEE)
+      setTimeout(
+        ->
+          done()
+        1000
+      )
     )
   )
 )

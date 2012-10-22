@@ -3,7 +3,8 @@
 # * Aware of newly created files and directories too!
 #   So you don't have to rewatch every time you add a file
 # * [Coffeelint](http://www.coffeelint.org/) the source code after every compilation
-# * Ignore Files through glob matching option and .csingore files
+# * Ignore Files through glob matching option and .csingore files  
+# * Auto-generate [docco](http://jashkenas.github.com/docco/) documents after every compilation
 
 # ### Require Dependencies
 
@@ -20,8 +21,9 @@ EventEmitter = require('events').EventEmitter
 # #### Third Party Modules
 # `underscore` by [DocumentCloud@documentcloud](https://github.com/documentcloud/underscore)  
 # `minimatch` by [Isaac Z. Schlueter@issacs](https://github.com/issacs/minimatch)  
-# `colors` by [Marak@marak](https://github.com/marak/colors)
-# `fswatchr` by [Tomo I/O@tomoio](https://github.com/tomoio/fswatchr)  
+# `colors` by [Marak@marak](https://github.com/marak/colors)  
+# `fswatchr` by [Tomo I/O@tomoio](https://github.com/tomoio/fswatchr)
+
 _ = require('underscore')
 minimatch = require('minimatch')
 colors = require('colors')
@@ -47,8 +49,8 @@ module.exports = class CoffeeStand extends EventEmitter
   # `@errorFiles (Array)` : path `string`s to compilation error coffee files  
   # `@cmpilers (Object)` : a map object of `Compiler` instances for each file  
   # `@lintConfig (Object)` : coffeelint configrations  
-  # `@ignoreFiles (Array)` : glob `String` patterns to ignore files and directories
-  # `@ignoreFile (String)` : a path to the ignore file pattern file
+  # `@ignoreFiles (Array)` : glob `String` patterns to ignore files and directories  
+  # `@ignoreFile (String)` : a path to the ignore file pattern file  
   # `@mapperFile (String)` : a path to the CS to JS mapping rule  file  
   # `@mapper (Object)` : rules to map `csfile` path to output `jsfile` path
  
@@ -70,7 +72,9 @@ module.exports = class CoffeeStand extends EventEmitter
     @nolint = @opts.nolint ? false
     @nojs = @opts.nojs ? false
     @nolog = @opts.nolog ? true
+    @doccoFiles = []
     @lintConfigPath = @opts.lintConfigPath ? path.join(@root, '.coffeelint')
+    @_setDoccoSources(@opts.doccoSources)
     @files = []
     @errorFiles = []
     @compilers = {}
@@ -81,11 +85,23 @@ module.exports = class CoffeeStand extends EventEmitter
     if @opts?.ignorePatterns?
       @setIgnoreFiles(@opts.ignorePatterns)
     @mapper = @opts?.mapper ? {}
-
+    @doccoOptions = {
+      css: @opts.doccoCSS,
+      output: @opts.doccoOutput,
+      template: @opts.doccoTemplate
+    }
+    @_setDocco()
   # ---
 
   # ### Private Methods
 
+  # #### Set sources for docco
+  # `sources (Array)` : a list of sources
+  _setDoccoSources: (sources) ->
+    if sources?
+      @doccoSources = []
+      for v in sources
+        @doccoSources.push(path.resolve(v))
   # #### check if the given file should be ignored
   # `dir (String)` : a path to a file
   _isIgnore: (file) ->
@@ -175,6 +191,39 @@ module.exports = class CoffeeStand extends EventEmitter
       )
       return {message : '\n' + errors.join('\n'), errorCount : errorCount}
 
+  # #### Set a child process for docco operations
+  _setDocco: () ->
+    @cp_docco = cp.fork(__dirname + '/docco')
+    @cp_docco.on('message', (data) =>
+      if data.err
+        console.log('Docco: something went wrong!\n'.red)
+      else
+        console.log('Docco: documents successfully generated!\n'.green)
+      @emit('docco', data)
+    )
+    @cp_docco.on('error', (err) =>
+      console.log('Docco: something went wrong!\n'.red)
+      @_setDocco()
+    )
+
+  # #### See if the file should be a source of docco document
+  # `filepath (String)` : a path to a file to check
+  _isDocco: (filepath) ->
+    if @doccoSources?
+      for v in @doccoSources
+        if minimatch(filepath, v)
+          return @doccoSources
+          break
+      return null
+    else
+      return null
+
+  # #### take off a file from @doccoFiles`
+  _withoutFile: (file) ->
+    @doccoFiles = (v for v in @doccoFiles when v isnt file)
+    if @doccoFiles.length is 0
+      @document()
+
   # #### Set up a Compiler on a file
   # `filename (String)` : a path to a file to set a Compiler on
   _setCompiler: (filename) ->
@@ -189,13 +238,21 @@ module.exports = class CoffeeStand extends EventEmitter
         unless @nolint then message.push(@_parseLint(data.lint).message)
         console.log(message.join('') + '\n')
       @emit('compiled', data)
+      if @doccoFiles.length isnt 0
+        @_withoutFile(filename)
+      else
+        @docco(filename)
     )
     @compilers[filename].on('nofile', (data) =>
+      if @doccoFiles.length isnt 0
+        @_withoutFile(filename)
       unless @nolog
         console.log('coffee file not found'.yellow + " - #{data.file}\n")
       @emit('nofile',data)
     )
     @compilers[filename].on('write error', (data) =>
+      if @doccoFiles.length isnt 0
+        @_withoutFile(data.file)
       unless @nolog
         message = [
           'fail to write js file'.yellow,
@@ -206,6 +263,8 @@ module.exports = class CoffeeStand extends EventEmitter
       @emit('write error',data)
     )
     @compilers[filename].on('compile error', (data) =>
+      if @doccoFiles.length isnt 0
+        @_withoutFile(data.file)
       unless @nolog
         console.log(
           'compile error'.red +
@@ -274,7 +333,6 @@ module.exports = class CoffeeStand extends EventEmitter
 
   # #### Kill CoffeeStand by removing all Compilers and Watchers
   kill: (cb) ->
-    console.log('nother')
     for v in @files
       @stopCompiler(v)
     cb?()
@@ -293,6 +351,7 @@ module.exports = class CoffeeStand extends EventEmitter
       )
     )
 
+  # #### Recursively watch directories and set a compiler on coffee files
   watch: ->
     fswatchr = new FSWatchr(@root)
     fswatchr.setFilter((dir, path) =>
@@ -302,13 +361,15 @@ module.exports = class CoffeeStand extends EventEmitter
       return false
     )
     fswatchr.on('File found', (file, stat) =>
+      if @_isDocco(file) and path.extname(file) is '.coffee' and not @_isIgnore(file)
+        @doccoFiles.push(file)
       @emit('File found', file, stat)
       if path.extname(file) is '.coffee'
         # If a coffee file is found, set a `Compiler` on it
         @startCompiler(file)
     )
     fswatchr.on('watchset', (dirname, filestats) =>
-       @emit('watchset', dirname, filestats)
+      @emit('watchset', dirname, filestats)
     )
     fswatchr.on('File created', (filename) =>
       if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
@@ -335,3 +396,17 @@ module.exports = class CoffeeStand extends EventEmitter
     )
     fswatchr.watch()
 
+  # #### See if there is a need for docco generation
+  # `filename (String)` : a path to the file to check
+  docco: (filename) ->
+    if @doccoSources? and @doccoFiles.length is 0 and filename? and @_isDocco(filename)
+      @document()
+
+  # #### Generate docco documents via a child process
+  document: () ->
+    # Allow a bit of time before generating docco docs. Auto-saved files such as '.#foo.coffee' will cause an error. These files are likely to be cleared instantly, and docco seems to list up these files, but fails to open them because those files are already gone by the time docco can open them. So don't let docco list up instantly disappearing files by giving it 500ms.
+    setTimeout(
+      =>
+        @cp_docco.send({sources: @doccoSources, options: @doccoOptions})
+      500
+    )

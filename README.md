@@ -16,7 +16,7 @@ Features
 * Auto-[Coffeelint](http://www.coffeelint.org/) (not JSLint) the source code after every compilation.
 * Ignore Files through glob matching option and `.csingore` file
 * Outupt JS dir & file mapping through `.csmapper` file
-
+* Auto-generate [docco](http://jashkenas.github.com/docco/) documents after every compilation
 Installation
 ------------
 
@@ -39,16 +39,37 @@ Command Line Usage
 `-l` `--lintconfig` : path to the [coffeelint configuration](http://www.coffeelint.org/#options) file, default to `.coffeelint`  
 `-m` `--mapper` : path to the CS to JS mapping file, default to `.csmapper`  
 `-i` `--ignore` : path to the ignore setting file, default to `.csignore`  
-`-p` `--ipatterns` : comma separeted glob patterns to ignore files, you can also use `.csignore` file to do the same
+`-p` `--ipatterns` : comma separeted glob patterns to ignore files, you can also use `.csignore` file to do the same  
+`-d` `--docco` : comma separeted paths of docco sources  
+`--doccooutput` : a path to the docco output location  
+`--doccocss` : a path to the docco css file  
+`--doccotemplate` : a path to the docco template file
 
 CoffeeLint
 ----------
 
-CoffeeStand does auto-[CooffeeLint](http://www.coffeelint.org/) your coffeescript files after every compilation to keep your code beautiful. You can suppess this feature by passing `--nolint` option.
+CoffeeStand does auto-[CooffeeLint](http://www.coffeelint.org/) your coffeescript files after every compilation to keep your code clean. You can suppess this feature by passing `--nolint` option.
 
 To change the default configurations, put `.coffeelint` file in your project root directory. You can also put config file at a defferent location, just pass `-l` or `--lintconfig` option followed by your arbitrary location to the config file.
 
 See [CoffeeLint website](http://www.coffeelint.org/#options) for the lint options and an example configuration file.
+
+Docco
+-----
+
+CoffeeStand also auto-generates [docco](http://jashkenas.github.com/docco/) documents after every compilation. This feature is optional and you can enable it by passing `--docco` (`-d` for short) option with a comma separated source list.
+
+For this CoffeeStand project, I process coffee files in the `src` directory and put the resulting html files into docco's default output directory `docs`.
+
+    coffeestand -d "./src/*"
+
+If you are in the root directory of the project, this should just do it. Note you may want to put `"` around the comma separated source list when you use a single pattern like this example, because CoffeeStand uses [commander.js](http://visionmedia.github.com/commander.js/) to process command line options, and it seems to auto-resolve the `*` parts of the source list, which means if you pass  
+
+    coffeestand -d ./src/*
+
+`./src/*` will turn into something like `./src/coffeestand.coffee`, the first actual file that matches the `./src/*` pattern, and it's not going to cover the rest of the files inside `src`.
+
+For docco options, CoffeeStand uses `--doccooutput`, `--doccocss`, `--doccotemplate` respectively. See [the git hub docco page](https://github.com/jashkenas/docco) for details on the docco options.
 
 Ignore File Settings
 --------------------
@@ -134,4 +155,4 @@ Run tests with [mocha](http://visionmedia.github.com/mocha/)
 	
 License
 -------
-**CoffeeStand** is released under the **MIT License**. - see [LICENSE](https://github.com/tomoio/coffeestand/blob/master/LICENSE) file
+**CoffeeStand** is released under the **MIT License**. - see [LICENSE](https://raw.github.com/tomoio/coffeestand/master/LICENSE) file

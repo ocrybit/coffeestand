@@ -17,12 +17,13 @@ path = require('path')
 EventEmitter = require('events').EventEmitter
 
 # #### Third Party Modules
-# `coffee-script` by [jashkenas@Jeremy Ashkenas](https://github.com/Jeremy Ashkenas/coffee-script)  
-# `coffeelint` by [clutchski@Matt Perpick](https://github.com/Matt Perpick/coffeelint)  
-# `minimatch` by [Isaac Z. Schlueter@issacs](https://github.com/issacs/minimatch)   
+# `coffee-script` by [jashkenas@Jeremy Ashkenas](https://github.com/jashkenas/coffee-script)  
+# `coffeelint` by [clutchski@Matt Perpick](https://github.com/clutchski/coffeelint)  
+# `minimatch` by [Isaac Z. Schlueter@issacs](https://github.com/issacs/minimatch)
 coffee = require('coffee-script')
 coffeelint = require('coffeelint')
 minimatch = require('minimatch')
+
 # ---
 
 # ## Compiler Class
