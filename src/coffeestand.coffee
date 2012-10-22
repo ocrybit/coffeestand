@@ -21,16 +21,14 @@ EventEmitter = require('events').EventEmitter
 # `underscore` by [DocumentCloud@documentcloud](https://github.com/documentcloud/underscore)  
 # `minimatch` by [Isaac Z. Schlueter@issacs](https://github.com/issacs/minimatch)  
 # `colors` by [Marak@marak](https://github.com/marak/colors)
-# `dirwalker` by [Tomo I/O@tomoio](https://github.com/tomoio/dirwalker)  
+# `fswatchr` by [Tomo I/O@tomoio](https://github.com/tomoio/fswatchr)  
 _ = require('underscore')
 minimatch = require('minimatch')
 colors = require('colors')
-DirWalker = require('dirwalker')
+FSWatchr = require('fswatchr')
 
 # #### Local Modules
-# `watcher` - [read annotated source code](watcher.html)  
 # `compiler` - [read annotated source code](compiler.html)  
-Watcher = require('./watcher')
 Compiler = require('./compiler')
 
 # ---
@@ -45,10 +43,8 @@ module.exports = class CoffeeStand extends EventEmitter
   # `@nojs (Bool)` : `true` to write to a JS file after compilation  
   # `@nolog (Bool)` : `true` to suppress stdout messages  
   # `@lintConfigPath (String)` : a path to a coffeelint configuration file, default to `./coffeelint.json`  
-  # `@dirs (Array)` : path `string`s to currently watching directories  
   # `@files (Array)` : path `string`s to currently watching coffee files
   # `@errorFiles (Array)` : path `string`s to compilation error coffee files  
-  # `@watchers (Object)` : a map object of `Watcher` instances for each directory  
   # `@cmpilers (Object)` : a map object of `Compiler` instances for each file  
   # `@lintConfig (Object)` : coffeelint configrations  
   # `@ignoreFiles (Array)` : glob `String` patterns to ignore files and directories
@@ -61,13 +57,10 @@ module.exports = class CoffeeStand extends EventEmitter
   # `nofile` : the coffee file to compile not found  
   # `write error` : failed to write to a JS file   
   # `compile error` : failed to compile a coffee file  
-  # `dir removed` : a directory removed  
-  # `dir created` : a directory created   
   # `coffee created` : a coffee file created   
   # `coffee changed` : a coffee file changed     
   # `coffee removed` : a coffee file removed       
-  # `walkend` : the initial directory reading operation finished   
-  # `watchstart` : `fs.watch` started
+  # `watchset` : `fs.watch` is recursively set
  
   # #### constructor
   # `@root` : see *Class Properties* section  
@@ -78,10 +71,8 @@ module.exports = class CoffeeStand extends EventEmitter
     @nojs = @opts.nojs ? false
     @nolog = @opts.nolog ? true
     @lintConfigPath = @opts.lintConfigPath ? path.join(@root, '.coffeelint')
-    @dirs = []
     @files = []
     @errorFiles = []
-    @watchers = {}
     @compilers = {}
     @lintConfig = {nolint: @nolint}
     @ignoreFile = @opts?.ignoreFile ? '.csignore'
@@ -136,20 +127,10 @@ module.exports = class CoffeeStand extends EventEmitter
       cb(@ignoreFiles)
     )
 
-  # #### Add a directory to @dirs
-  # `dir (String)` : a path to a directory  
-  _addDir: (dir) ->
-    @dirs.push(dir)
-
   # #### Add a file to @files
   # `file (String)` : a path to a file  
   _addFile: (file) ->
     @files.push(file)
-
-  # #### Remove a directory from @dirs
-  # `dir (String)` : a path to a directory  
-  _rmDir: (dir) ->
-    @dirs = _(@dirs).without(dir)
 
   # #### Remove a file from @files
   # `file (String)` : a path to a file  
@@ -237,56 +218,6 @@ module.exports = class CoffeeStand extends EventEmitter
     )
     @compilers[filename].compile(@nojs)
 
-  # #### Close a directoy Watcher
-  # `dir (String)` : a path to a directory  
-  _closeWatcher: (dir) ->
-    @watchers[dir]?.removeAllListeners()
-    @watchers[dir]?.close()
-    delete @watchers[dir]
-
-  # #### Watch directory for changes and emit events  
-  # `dirname (String)` : a path to a directory to watch
-  # `cb (Function)` : a callback function
-  _watch: (dirname, cb) ->
-    @watchers[dirname] = new Watcher(dirname)
-    @watchers[dirname].on('dir removed', (filename) =>
-      if not @_isIgnore(filename)
-        @emit('dir removed', filename)
-        @stopWatch(filename)
-    )
-    @watchers[dirname].on('dir created', (filename) =>
-      if not @_isIgnore(filename)
-        @startWatch(filename)
-        @emit('dir created', filename)
-    )
-    @watchers[dirname].on('file created', (filename) =>
-      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
-        @startCompiler(filename)
-        @emit('coffee created', filename)
-    )
-    @watchers[dirname].on('file changed', (filename,stats) =>
-      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
-        @emit('coffee changed', filename)
-        @compilers[filename]?.compile?()
-    )
-    @watchers[dirname].on('file removed', (filename) =>
-      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
-        if @compilers[filename]?.jsname? and @compilers[filename]?.rmJS
-          rmfn = @compilers[filename]?.rmJS
-        else
-          rmfn = (cb) =>
-            cb()
-        rmfn( =>
-          @errorFiles = _(@errorFiles).without(filename)
-          @stopCompiler(filename)
-          @emit('coffee removed', filename)
-        )
-    )
-    @watchers[dirname].on('watchstart', =>
-      @emit('watchstart', dirname)      
-    )
-    @watchers[dirname].watch(cb)
-
   # ---
 
   # ### Public API
@@ -335,56 +266,19 @@ module.exports = class CoffeeStand extends EventEmitter
     @_addFile(file)
     @_setCompiler(file)
 
-  # #### Start watching a directory
-  # `dir (String)` : a directory path 
-  # `cb (Function)` : a callback function 
-  startWatch: (dir,cb) ->
-    @_addDir(dir)
-    @_watch(dir,cb)
-
   # #### Stop Compiler on a file
   # `file (String)` : a file path   
   stopCompiler: (file) ->
     @_removeCompiler(file)
     @_rmFile(file)
 
-  # #### Stop watching a directory
-  # `dir (String)` : a directory path  
-  stopWatch: (dir) ->
-    @unsetIgnoreFiles(dir)
-    @_closeWatcher(dir)
-    @_rmDir(dir)
-
   # #### Kill CoffeeStand by removing all Compilers and Watchers
   kill: (cb) ->
-    for v in @dirs
-      @stopWatch(v)
+    console.log('nother')
     for v in @files
       @stopCompiler(v)
     cb?()
 
-  # #### Recursively Walk through directories and watch them, set up compilers on coffee files
-  # `file_cb (Function)` : a callback function to execute when a file is found  
-  # `dir_cb (Function)` : a callback function to execute when a directory is found  
-  walk: (file_cb, dir_cb) ->
-    ignore = @ignoreFiles
-    walker = new DirWalker(@root)
-    walker.setFilter((dir, path) =>
-      for v in @ignoreFiles
-        if minimatch(dir, v)
-          return true
-      return false
-    )
-    walker.on('File', (file, stat) =>
-      file_cb?(file, stat)
-    )
-    walker.on('Directory', (dir, stat) =>
-      dir_cb?(dir, stat)
-    )
-    walker.on('end', (ret) =>
-       @emit('walkend', ret)
-    )
-    walker.walk()
   # #### Run CoffeeStand
   run: ->
     # First get CoffeeLint config
@@ -394,15 +288,50 @@ module.exports = class CoffeeStand extends EventEmitter
         # Then get .csmapper
         @_readCSMapper(@mapperFile, =>
           # Finally recursively walk through directories
-          @walk(
-            (file,stat) =>
-              if path.extname(file) is '.coffee'
-                # If a coffee file is found, set a `Compiler` on it
-                @startCompiler(file)
-            (dir,stat) =>
-              # If a directory is found, watch it for changes
-              @startWatch(dir)
-          )
+          @watch()
         )
       )
     )
+
+  watch: ->
+    fswatchr = new FSWatchr(@root)
+    fswatchr.setFilter((dir, path) =>
+      for v in @ignoreFiles
+        if minimatch(dir, v)
+          return true
+      return false
+    )
+    fswatchr.on('File found', (file, stat) =>
+      @emit('File found', file, stat)
+      if path.extname(file) is '.coffee'
+        # If a coffee file is found, set a `Compiler` on it
+        @startCompiler(file)
+    )
+    fswatchr.on('watchset', (dirname, filestats) =>
+       @emit('watchset', dirname, filestats)
+    )
+    fswatchr.on('File created', (filename) =>
+      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
+        @startCompiler(filename)
+        @emit('coffee created', filename)
+    )
+    fswatchr.on('File changed', (filename,stats) =>
+      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
+        @emit('coffee changed', filename)
+        @compilers[filename]?.compile?()
+    )
+    fswatchr.on('File removed', (filename) =>
+      if path.extname(filename) is '.coffee' and not @_isIgnore(filename)
+        if @compilers[filename]?.jsname? and @compilers[filename]?.rmJS
+          rmfn = @compilers[filename]?.rmJS
+        else
+          rmfn = (cb) =>
+            cb()
+        rmfn( =>
+          @errorFiles = _(@errorFiles).without(filename)
+          @stopCompiler(filename)
+          @emit('coffee removed', filename)
+        )
+    )
+    fswatchr.watch()
+

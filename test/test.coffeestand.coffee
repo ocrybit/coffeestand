@@ -142,127 +142,54 @@ describe('CoffeeStand', ->
     )
   )
 
-  describe('_addDir', ->
-    it('add dir to @dirs list', ->
-      coffeestand._addDir(FOO)
-      coffeestand.dirs.should.include(FOO)
-    )
-  )
-
-  describe('_rmDir', ->
-    it('remove dir from @dirs list', ->
-      coffeestand._addDir(FOO)
-      coffeestand.dirs.should.include(FOO)
-      coffeestand._rmDir(FOO)
-      coffeestand.dirs.should.not.include(FOO)
-    )
-  )
-
   describe('_addFile', ->
     it('add file to @files list', ->
-      coffeestand._addDir(HOTCOFFEE)
-      coffeestand.dirs.should.include(HOTCOFFEE)
+      coffeestand._addFile(HOTCOFFEE)
+      coffeestand.files.should.include(HOTCOFFEE)
     )
   )
 
   describe('_rmFile', ->
     it('rmove file from @files list', ->
-      coffeestand._addDir(HOTCOFFEE)
-      coffeestand.dirs.should.include(HOTCOFFEE)
-      coffeestand._rmDir(HOTCOFFEE)
-      coffeestand.dirs.should.not.include(HOTCOFFEE)
+      coffeestand._addFile(HOTCOFFEE)
+      coffeestand.files.should.include(HOTCOFFEE)
+      coffeestand._rmFile(HOTCOFFEE)
+      coffeestand.files.should.not.include(HOTCOFFEE)
     )
   )
 
-  describe('walk', ->
-    it('emit "walkend" with @files & @dirs when finish', (done) ->
-      coffeestand.walk()
-      coffeestand.once('walkend',(data)->
-        data.Directory.should.eql([TMP,FOO])
-        data.File.should.eql([HOTCOFFEE,ICEDCOFFEE])
-        done()
-      )
-    )
-  )
-
-  describe('_watch', ->
-    it('emit "watchstart" event', (done) ->
-      coffeestand.once('watchstart', (dir)->
-        dir.should.equal(TMP)
-        done()
-      )
-      coffeestand._watch(TMP)
-    )
-    it('watch dir for dir creation', (done) ->
-      coffeestand._watch(TMP, ->
-        coffeestand.once('dir created', (dir) ->
-          dir.should.equal(FOO2)
-          done()
-        )
-        fs.mkdir(FOO2)
-      )
-    )
-    it('watch dir for dir removal', (done) ->
-      coffeestand._watch(TMP, ->
-        coffeestand.once('dir removed', (dir) ->
-          dir.should.equal(FOO)
-          done()
-        )
-        rimraf(FOO, ->)
-      )
-    )
+  describe('watch', ->
     it('watch dir for coffee file creation', (done) ->
-      coffeestand._watch(TMP, ->
+      coffeestand.once('watchset', (dirname)->
         coffeestand.once('coffee created', (file) ->
           file.should.equal(BLACKCOFFEE)
           done()
         )
         fs.writeFile(BLACKCOFFEE,GOOD_CODE)
       )
+      coffeestand.watch()
     )
     it('watch dir for coffee file removal', (done) ->
-      coffeestand._watch(TMP, ->
+      coffeestand.once('watchset', (dirname)->
         coffeestand.once('coffee removed', (file) ->
           file.should.equal(HOTCOFFEE)
           done()
         )
         fs.unlink(HOTCOFFEE)
       )
+      coffeestand.watch()
     )
     it('watch dir for coffee file change', (done) ->
-      coffeestand._watch(TMP, ->
+      coffeestand.once('watchset', (dirname)->
         coffeestand.once('coffee changed', (file) ->
           file.should.equal(HOTCOFFEE)
           done()
         )
         fs.utimes(HOTCOFFEE, Date.now(), Date.now())
       )
+      coffeestand.watch()
     )
   )
-
-  describe('_closeWatcher', ->
-    it("shouldn't watch dir after close", (done) ->
-      coffeestand._watch(TMP, ->
-        coffeestand.once('coffee changed', (file) ->
-          file.should.equal(HOTCOFFEE)
-          coffeestand.once('coffee removed', (file) ->
-            false.should.be.ok
-            done()
-          )
-          coffeestand._closeWatcher(TMP)
-          fs.unlink(HOTCOFFEE)
-          setTimeout(
-            ()->
-              true.should.be.ok
-              done()
-            0
-          )
-        )
-        fs.utimes(HOTCOFFEE, Date.now(), Date.now())
-      )
-    )
-  )
-
 
   describe('_setCompiler', ->
     it('watch and emit "compiled" for coffee files', (done) ->
@@ -328,46 +255,10 @@ describe('CoffeeStand', ->
     )
   )
 
-  describe('startWatch', ->
-    it('should emit "coffee created" event', (done) ->
-      coffeestand.startWatch(TMP, ->
-        coffeestand.once('coffee created', (file) ->
-          file.should.equal(BLACKCOFFEE)
-          done()
-        )
-        fs.writeFile(BLACKCOFFEE, GOOD_CODE)
-      )
-    )
-  )
-
-  describe('stopWatch', ->
-    it("shouldn't watch newly added coffee file after stop", (done) ->
-      coffeestand.startWatch(TMP, ->
-        coffeestand.once('coffee removed', (file) ->
-          file.should.equal(HOTCOFFEE)
-          coffeestand.once('coffee created', (file) ->
-            false.should.be.ok
-            done()
-          )
-          coffeestand.stopWatch(TMP)
-          fs.writeFile(BLACKCOFFEE, GOOD_CODE)
-          setTimeout(
-            ()->
-              true.should.be.ok
-              done()
-            0
-          )
-
-        )
-        fs.unlink(HOTCOFFEE)
-      )
-    )
-  )
-
   describe('#run', ->
     it('should watch a newly created sub directory', (done) ->
-      coffeestand.once('walkend', (data)->
-        coffeestand.on('watchstart', (file) ->
+      coffeestand.once('watchset', (data)->
+        coffeestand.on('watchset', (file) ->
           if file is FOO2
             coffeestand.once('coffee created', (file) ->
               done()
@@ -382,22 +273,19 @@ describe('CoffeeStand', ->
 
   describe('#kill', ->
     it('kill @compilers and @watchers, empty @dirs and @files', (done) ->
-      coffeestand.on('watchstart', (dir) ->
-        if dir is FOO
-          coffeestand.kill(->
-            coffeestand.dirs.should.be.empty
-            coffeestand.files.should.be.empty
-            coffeestand.compilers.should.be.empty
-            coffeestand.watchers.should.be.empty
-            done()
-          )
+      coffeestand.once('watchset', () ->
+        coffeestand.kill(->
+          coffeestand.files.should.be.empty
+          coffeestand.compilers.should.be.empty
+          done()
+        )
       )
       coffeestand.run()
     )
   )
   describe('getErrorFiles', ->
     it('return a list of compile error files', (done) ->
-      coffeestand.on('watchstart', (dir) ->
+      coffeestand.on('watchset', (dir) ->
         if dir is TMP
           coffeestand.removeAllListeners()
           coffeestand.once('compile error', (data) ->
