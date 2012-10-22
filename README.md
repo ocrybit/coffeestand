@@ -17,6 +17,7 @@ Features
 * Ignore Files through glob matching option and `.csingore` file
 * Outupt JS dir & file mapping through `.csmapper` file
 * Auto-generate [docco](http://jashkenas.github.com/docco/) documents after every compilation
+
 Installation
 ------------
 
