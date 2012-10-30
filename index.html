@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CoffeeStand - A recursive CoffeeScript watcher also aware of newly added files.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/css/prettify.css" rel="stylesheet">
+    <link href="assets/css/docs.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="assets/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
+
+  </head>
+
+  <body data-spy="scroll" data-target=".gh-pages-sidebar">
+    <!-- Navbar
+	 ================================================== -->
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+	  <a href="https://github.com/tomoio/coffeestand"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_red_aa0000.png" alt="Fork me on GitHub"></a>
+          <a class="brand" href="./">CoffeeStand</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+	      
+  
+  
+  <li><a href="http://tomoio.github.com/coffeestand/">Home</a></li>
+
+  
+    <li class="dropdown">
+      <a href="#" class="dropdown-toggle" data-toggle="dropdown">Annotated Source <b class="caret"></b></a>
+      <ul class="dropdown-menu">
+	<li><a href="docs/coffeestand.html">coffeestand</a></li><li><a href="docs/compiler.html">compiler</a></li>
+      </ul>
+    </li>
+  
+  
+  
+
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subhead
+	 ================================================== -->
+    <header>
+      <div class="container">
+	<div class="row">
+	  <div class="span6">
+	    <h1>CoffeeStand</h1>
+	    <p class="lead">A recursive CoffeeScript watcher also aware of newly added files.</p>
+	    <p><p>A recursive CoffeeScript watcher also aware of newly added files. <a href="http://coffeescript.org/#usage">The built-in CoffeeScript watcher</a> doesn&#39;t work this way. Now you can start <strong>CoffeeStand</strong> at your root directory once and for all and forget about restarting the watch process every time you add a new file.</p>
+
+<p>The simplest way to recursively watch your entire project from the command-line is run <code>coffeestand</code> in the project root directory.</p>
+
+<pre class="prettyprint linenums"><code>coffeestand</code></pre></p>
+	  </div>
+	  <div class="span6">
+	    <div id="myCarousel" class="carousel slide">
+              <div class="carousel-inner">
+		<div class="item active"><img src="assets/screenshots/2012-10-29-071822_1366x768_scrot.png" alt=""><div class="carousel-caption"><h4>Automationg CoffeeScript compilation, Coffeelint, Docco generation, Mocha tests...all together with beautiful outupts.</h4></div></div>
+              </div>
+              <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+              <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </header>
+
+
+    <div class="container">
+
+      <!-- Docs nav
+	   ================================================== -->
+      <div class="row">
+	<div class="span3 gh-pages-sidebar">
+          <ul class="nav nav-list gh-pages-sidenav">
+	    <li><a href="#features"><i class="icon-chevron-right"></i> Features</a></li><li><a href="#installation"><i class="icon-chevron-right"></i> Installation</a></li><li><a href="#command-line-usage"><i class="icon-chevron-right"></i> Command Line Usage</a></li><li><a href="#coffeelint"><i class="icon-chevron-right"></i> CoffeeLint</a></li><li><a href="#docco"><i class="icon-chevron-right"></i> Docco</a></li><li><a href="#ignore-file-settings"><i class="icon-chevron-right"></i> Ignore File Settings</a></li><li><a href="#output-js-file-mapping"><i class="icon-chevron-right"></i> Output JS File Mapping</a></li><li><a href="#in-your-node-scripts"><i class="icon-chevron-right"></i> In Your Node Scripts</a></li><li><a href="#running-tests"><i class="icon-chevron-right"></i> Running Tests</a></li><li><a href="#license"><i class="icon-chevron-right"></i> License</a></li>
+          </ul>
+	</div>
+	<div class="span9">
+	  <section id="features"><div class="page-header"><h2>Features</h2></div><ul><li>Recursively watch directories and auto-recompile when coffee files are changed.</li><li>Write compiled code to destination js files.</li><li>Aware of newly created files and directories too! So you don&#39;t have to rewatch every time you add a file.</li><li>Also Aware of newly created directories and files inside.</li><li>Auto-<a href="http://www.coffeelint.org/">Coffeelint</a> (not JSLint) the source code after every compilation.</li><li>Ignore Files through glob matching option and <code>.csingore</code> file</li><li>Outupt JS dir &amp; file mapping through <code>.csmapper</code> file</li><li>Auto-generate <a href="http://jashkenas.github.com/docco/">docco</a> documents after every compilation</li></ul></section>
+
+<section id="installation"><div class="page-header"><h2>Installation</h2></div><p>Use <a href="https://npmjs.org/">npm</a>, <code>-g</code> option is recommended so you can globally use <code>coffeestand</code> CLI.</p><pre class="prettyprint linenums"><code>sudo npm install -g coffeestand</code></pre></section>
+
+<section id="command-line-usage"><div class="page-header"><h2>Command Line Usage</h2></div><pre class="prettyprint linenums"><code>coffeestand &lt;dir&gt; [options]</code></pre><p><code>dir</code> : the root directory to watch, CoffeeStand walks down its sub directories and watches the entire project tree. If omitted, <code>dir</code> will be set <code>./</code> which is the current working directory.</p><h4>options</h4><p><code>--nolog</code> : supress the stdout log messages, useful when using the coffeestand module in your node scripts<br/><code>--nojs</code> : don&#39;t write compiled code to JS files, useful if you just want to see how compilation goes<br/><code>--nolint</code> : don&#39;t coffeelint after compilation<br/><code>-l</code> <code>--lintconfig</code> : path to the <a href="http://www.coffeelint.org/#options">coffeelint configuration</a> file, default to <code>.coffeelint</code><br/><code>-m</code> <code>--mapper</code> : path to the CS to JS mapping file, default to <code>.csmapper</code><br/><code>-i</code> <code>--ignore</code> : path to the ignore setting file, default to <code>.csignore</code><br/><code>-p</code> <code>--ipatterns</code> : comma separeted glob patterns to ignore files, you can also use <code>.csignore</code> file to do the same<br/><code>-d</code> <code>--docco</code> : comma separeted paths of docco sources<br/><code>--doccooutput</code> : a path to the docco output location<br/><code>--doccocss</code> : a path to the docco css file<br/><code>--doccotemplate</code> : a path to the docco template file</p></section>
+
+<section id="coffeelint"><div class="page-header"><h2>CoffeeLint</h2></div><p>CoffeeStand does auto-<a href="http://www.coffeelint.org/">CooffeeLint</a> your coffeescript files after every compilation to keep your code clean. You can suppess this feature by passing <code>--nolint</code> option.</p><p>To change the default configurations, put <code>.coffeelint</code> file in your project root directory. You can also put config file at a defferent location, just pass <code>-l</code> or <code>--lintconfig</code> option followed by your arbitrary location to the config file.</p><p>See <a href="http://www.coffeelint.org/#options">CoffeeLint website</a> for the lint options and an example configuration file.</p></section>
+
+<section id="docco"><div class="page-header"><h2>Docco</h2></div><p>CoffeeStand also auto-generates <a href="http://jashkenas.github.com/docco/">docco</a> documents after every compilation. This feature is optional and you can enable it by passing <code>--docco</code> (<code>-d</code> for short) option with a comma separated source list.</p><p>For this CoffeeStand project, I process coffee files in the <code>src</code> directory and put the resulting html files into docco&#39;s default output directory <code>docs</code>.</p><pre class="prettyprint linenums"><code>coffeestand -d &quot;./src/*&quot;</code></pre><p>If you are in the root directory of the project, this should just do it. Note you may want to put <code>&quot;</code> around the comma separated source list when you use a single pattern like this example, because CoffeeStand uses <a href="http://visionmedia.github.com/commander.js/">commander.js</a> to process command line options, and it seems to auto-resolve the <code>*</code> parts of the source list, which means if you pass  </p><pre class="prettyprint linenums"><code>coffeestand -d ./src/*</code></pre><p><code>./src/*</code> will turn into something like <code>./src/coffeestand.coffee</code>, the first actual file that matches the <code>./src/*</code> pattern, and it&#39;s not going to cover the rest of the files inside <code>src</code>.</p><p>For docco options, CoffeeStand uses <code>--doccooutput</code>, <code>--doccocss</code>, <code>--doccotemplate</code> respectively. See <a href="https://github.com/jashkenas/docco">the git hub docco page</a> for details on the docco options.</p></section>
+
+<section id="ignore-file-settings"><div class="page-header"><h2>Ignore File Settings</h2></div><p>You can make CoffeeStand to ignore some files and directories eather by</p><ol><li>passing <code>--ipatterns</code> (<code>-p</code> for short) option followed by comma separated glob patterns<br/>or  </li><li>putting <code>.csignore</code> file in your project root directory</li></ol><p>If you use a location other than <code>/path/to/project/root/.csignore</code>, just pass <code>-i</code> (<code>--ignore</code> for short) option with your arbitrary location.</p><p>CoffeeStand uses glob patterns to match file paths using <a href="https://github.com/isaacs/minimatch">minimatch</a> module.</p><h4>examples</h4><pre class="prettyprint linenums"><code>**/node_modules
+**/.*</code></pre><p>The above patterns ignore <em>node_modules</em> directory and <em>dot files</em>, convenient for git users and node module developers.  </p><p>If the parent directory is ignored CoffeeStand doesn&#39;t go into its sub directories so it can efficiently reduce the number of watch processes.  </p><p>These 2 patterns are indeed set as default values to ease node module development.  </p><p>Add your patterns by setting a <code>.csignore</code> (can be a different name) file and write one glob pattern per line. Ignore Patterns can be also specified as an inline command line option. Separate the patterns with a comma and give it to coffeestand command with <code>-p</code> or <code>--ipatterns</code> option.</p><pre class="prettyprint linenums"><code>coffeestand -p **/node_modules,**/.*</code></pre></section>
+
+<section id="output-js-file-mapping"><div class="page-header"><h2>Output JS File Mapping</h2></div><p>By default, CoffeeStand saves compiled JS code to a JS file in the same directory the original coffeescript file is in, that is, /path/to/project/foo.coffe will be compiled to /path/to/project/foo.js. To change this behavior, you can put <code>.csmapper</code> JSON file into the project root directory.</p><h4>examples</h4><p>An example <code>.csmapper</code> file would look something like this</p><pre class="prettyprint linenums"><code>{&quot;**/src/*&quot; : [/\/src\//, &quot;/lib/&quot;]}</code></pre><p>This is what I use to auto-compile the coffee files in the <code>src</code> directories into the <code>lib</code> directory. I use CoffeeStand to watch files while developing CoffeeStand. So this applies to the source tree of this node module repo and it works.</p><ol><li>The content of <code>.csmapper</code> must be JSON formatted that can be parsed by <code>JSON.parse()</code></li><li>Each mapping pattern is a key-value pair</li><li>The key is a glob and put in a pattern matching test against file paths</li><li>If the glob key matches a file path, the path is replaced using the Javascript <code>replace()</code> method with the value array as arguments to <code>replace()</code></li></ol><p>So in the above example, <code>**/src/*</code> matches <code>/project/root/src/foo.coffee</code>, and <code>[/\/src\//, &quot;/lib/&quot;]</code> turns to <code>replace(/\/src\//, &quot;/lib/&quot;)</code> and replaces the path to <code>/project/root/lib/foo.js</code>.  </p><p>The <code>.coffee</code> extension will be auto-replaced to <code>.js</code>.  </p><p>You can put as many key-value pairs as you want in a <code>.csmapper</code> file  </p><p>Putting multiple patterns in <code>.csmapper</code></p><pre class="prettyprint linenums"><code>{
+  &quot;**/src/*&quot; : [/\/src\//, &quot;/lib/&quot;],
+  &quot;**/cofffe/*&quot; : [&quot;before&quot;, &quot;after&quot;],	  
+  ........,
+  ........
+}</code></pre><p><code>.csmapper</code> can be named differently and put at a different location, in such cases, pass <code>-m</code> or <code>--mapper</code> followed by the file location as a command line option.</p><pre class="prettyprint linenums"><code>coffeestand -m /path/to/your/mapping/file.json</code></pre></section>
+
+<section id="in-your-node-scripts"><div class="page-header"><h2>In Your Node Scripts</h2></div><p>CoffeeStand can be also used in your node scripts as a module.  </p><pre class="prettyprint linenums"><code>CoffeeStand = require(&#39;coffeestand&#39;)</code></pre><p>see <a href="http://tomoio.github.com/coffeestand/docs/coffeestand.html">annotated sorce code</a> for more details  </p></section>
+
+<section id="running-tests"><div class="page-header"><h2>Running Tests</h2></div><p>Run tests with <a href="http://visionmedia.github.com/mocha/">mocha</a></p><pre class="prettyprint linenums"><code>make</code></pre></section>
+
+<section id="license"><div class="page-header"><h2>License</h2></div><p><strong>CoffeeStand</strong> is released under the <strong>MIT License</strong>. - see <a href="https://raw.github.com/tomoio/coffeestand/master/LICENSE">LICENSE</a> file</p></section>
+	</div>
+      </div>
+
+    </div>
+
+
+
+    <!-- Footer
+	 ================================================== -->
+    <footer class="footer">
+      <div class="container">
+        <p>Copyright © 2012 <a href="http://tomo.io">Tomo I/O</a></p>
+      </div>
+    </footer>
+
+    <!-- Le javascript
+	 ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap.js"></script>
+    <script src="assets/js/prettify.js"></script>
+    <script src="assets/js/application.js"></script>
+
+  </body>
+</html>

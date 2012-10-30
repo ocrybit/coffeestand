@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+(function() {
+  var CoffeeStand, coffeestand, dir, doccoSources, ignoreFile, ignorePatterns, lintConfigPath, mapperFile, nojs, nolint, nolog, program, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6;
+
+  program = require('commander');
+
+  CoffeeStand = require('../lib/coffeestand');
+
+  program.option('-i, --ignore <path>', 'a path to ignore pattern (glob) setting file', '.csignore').option('-p, --ipatterns <patterns>', 'comma separated ignore patterns (glob)').option('--nolog', 'no stdout log messages').option('--nolint', 'no CoffeeLinting').option('--nojs', 'no writing to JS output file').option('-l, --lintconfig <path>', 'a path to coffeelint config file (JSON)', '.coffeelint').option('-m, --mapper <path>', 'a path to CS to JS file mapping rule file (JSON)', '.csmapper').option('-d, --docco <path>', 'comma separated path of docco sources').option('--doccooutput <path>', 'an output path for docco').option('--doccocss <path>', 'a css file for docco').option('--doccotemplate <path>', 'a template file for docco');
+
+  program.parse(process.argv);
+
+  dir = (_ref = program.args[0]) != null ? _ref : './';
+
+  ignoreFile = program.ignore;
+
+  ignorePatterns = (_ref1 = (_ref2 = program.ipatterns) != null ? typeof _ref2.split === "function" ? _ref2.split(',') : void 0 : void 0) != null ? _ref1 : [];
+
+  doccoSources = (_ref3 = program.docco) != null ? typeof _ref3.split === "function" ? _ref3.split(',') : void 0 : void 0;
+
+  mapperFile = program.mapper;
+
+  nolint = (_ref4 = program.nolint) != null ? _ref4 : false;
+
+  nolog = (_ref5 = program.nolog) != null ? _ref5 : false;
+
+  nojs = (_ref6 = program.nojs) != null ? _ref6 : false;
+
+  lintConfigPath = program.lintconfig;
+
+  coffeestand = new CoffeeStand(dir, {
+    ignoreFile: ignoreFile,
+    ignorePatterns: ignorePatterns,
+    mapperFile: mapperFile,
+    nolog: nolog,
+    nolint: nolint,
+    nojs: nojs,
+    lintConfigPath: lintConfigPath,
+    doccoSources: doccoSources,
+    doccoOutput: program.doccooutput,
+    doccoCSS: program.doccocss,
+    doccoTemplate: program.doccotemplate
+  });
+
+  coffeestand.run();
+
+}).call(this);
