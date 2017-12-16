@@ -150,7 +150,7 @@ see [annotated sorce code](http://tomoio.github.com/coffeestand/docs/coffeestand
 Running Tests
 -------------
 
-Run tests with [mocha](http://visionmedia.github.com/mocha/)
+Run tests with [mocha](http://mochajs.org/)
 
     make
 	
